@@ -1,26 +1,26 @@
 package com.hanen.site.de.vente.priv.controllers;
 
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.bind.annotation.AuthenticationPrincipal;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hanen.site.de.vente.priv.exception.ResourceNotFoundException;
 import com.hanen.site.de.vente.priv.model.Client;
 import com.hanen.site.de.vente.priv.services.ClientService;
+
 @CrossOrigin("http://localhost:4200")
 
 @RestController
@@ -30,63 +30,57 @@ public class ClientControlleur {
 	@Autowired
 	private ClientService clientService;
 	
-	@GetMapping("/clients")
-	public List<Client> getAllClients() {
+	 @RequestMapping(value = "/client", method = RequestMethod.GET)
+	    public String getClient(@AuthenticationPrincipal final UserDetails userDetails, Model model) {
+	    	
+	    	String Email = userDetails.getUsername();
+	    	String pw = userDetails.getPassword();
+	    	
+	    	Collection<? extends GrantedAuthority> roles = userDetails.getAuthorities();
+	    	GrantedAuthority  theRole = roles.stream().findFirst().get(); 
+	    	String role = theRole.toString();
+	    	
+	    	if(role.equalsIgnoreCase("ROLE_ADMIN")) {
+	        List<Client> clients = clientService.findAll();
+	        model.addAttribute("clients", clients);
+	        return "client/clientList";
+	    	}
+	    	else {
+	    		return "redirect:/home";
+	    	}
+	    }
 
-		List<Client> clients = clientService.getAllClients();
-		return clients;
+	    @RequestMapping(value = "/client/add", method = RequestMethod.GET)
+	    public String addUserForm(Model model) {
+	        model.addAttribute("user", new Client());
+	        return "client/addClient";
+	    }
+	    @RequestMapping(value = "/client/add", method = RequestMethod.POST)
+	    public String addUser(@Valid @ModelAttribute("client") Client client, BindingResult result, Model model) {
+
+	        if(result.hasErrors()){
+	            model.addAttribute("errors",result.getAllErrors());
+	            return "user/addUser";
+	        }
+	        client.setRole("USER");
+	        clientService.add(client);
+	        
+	       // return "redirect:/users";
+	        
+	        return "redirect:/products";
+	    }
+
+	    @RequestMapping(value = "/user/delete/{id}", method = RequestMethod.GET)
+	    public String deleteUser(@PathVariable Long id) {
+	        clientService.delete(id);
+	        return "redirect:/users";
+	    }
+
+	    @RequestMapping(value = "/user/edit/{id}", method = RequestMethod.GET)
+	    public String updateUser(@PathVariable Long id, Model model) {
+	        //System.out.println("Edit");
+	        model.addAttribute("client", clientService.get(id));
+	        //productService.add(user);
+	        return "user/updateUser";
+	    }
 	}
-	
-	
-	
-	@GetMapping("/clients/{id}")
-	public ResponseEntity<Client> getClientById(@PathVariable(value = "id") Long cltId) {
-		Client client = clientService.getClientById(cltId).get();
-		return ResponseEntity.ok().body(client);
-	}
-	
-	@PostMapping("/clients")
-	public Client createClient(@Valid @RequestBody Client clteg) {
-		return clientService.createClient(clteg);
-	}
-	
-	
-	@PutMapping("/clients/{id}")
-	public ResponseEntity<Client> updateClient(@PathVariable(value = "id") Long cltId,
-			@Valid @RequestBody Client cltDetails) throws ResourceNotFoundException {
-		Client clt = clientService.getClientById(cltId)
-				.orElseThrow(() -> new ResourceNotFoundException(" Client not found for this id :: " + cltId));
-
-		clt.setClt_id(cltDetails.getClt_id());
-        clt.setEmail(cltDetails.getEmail());
-        clt.setEmail(cltDetails.getEmail());
-        clt.setMdp(cltDetails.getMdp());
-        clt.setNom(cltDetails.getNom());
-        clt.setPrenom(cltDetails.getPrenom());
-        clt.setTelephone(cltDetails.getTelephone());
-
-
-
-
-		final Client updatedClient = clientService.updateClient(cltDetails);
-		return ResponseEntity.ok(updatedClient);
-	}
-	
-	
-	
-	@DeleteMapping("/clients/{id}")
-	public Map<String, Boolean> deleteClient(@PathVariable(value = "id") Long cltId)
-			throws ResourceNotFoundException {
-		Client clt = clientService.getClientById(cltId)
-				.orElseThrow(() -> new ResourceNotFoundException("Client not found for this id :: " + cltId));
-
-		clientService.deleteClient(clt);
-		
-		Map<String, Boolean> response = new HashMap<>();
-		response.put("deleted", Boolean.TRUE);
-		return response;
-	}
-	
-	
-
-}

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import com.hanen.site.de.vente.priv.model.Produit;
@@ -48,5 +49,6 @@ public class ProduitServiceImpl implements ProduitService{
 		produitRepository.delete(produit);
 		
 	}
-
+	
+	
 }

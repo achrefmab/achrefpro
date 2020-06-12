@@ -25,7 +25,7 @@ import com.hanen.site.de.vente.priv.services.CategorieService;
 
 @RestController
 @RequestMapping("/api/v1")
-public class CategorieContrelleur {
+public class CategorieControlleur {
 	
 	@Autowired
 	private CategorieService categorieService;
